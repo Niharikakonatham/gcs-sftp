@@ -1,0 +1,69 @@
+'''
+def hello_gcs(event, context):
+    """Triggered by a change to a Cloud Storage bucket.
+    Args:
+         event (dict): Event payload.
+         context (google.cloud.functions.Context): Metadata for the event.
+    """
+    file = event
+    print(f"Processing file: {file['name']}.")
+'''
+import pickle
+import pandas as pd
+# Imports Python standard library logging
+import logging
+from google.cloud import storage
+from datetime import datetime, timedelta
+import datetime as dt
+from dateutil.relativedelta import relativedelta
+from google_auth_oauthlib.flow import InstalledAppFlow
+from googleapiclient.discovery import build
+import pysftp
+from io import StringIO
+import paramiko
+def upload_file(event, context):
+    
+    file = event
+    file_name = file['name']
+    
+    client = storage.Client()
+    bucket2 = client.get_bucket('niha-bucket999')
+    #bucket2 = client.get_bucket('BUCKET NAME')
+    #blob2 = bucket2.blob('privatekey.pem')
+    #contents = blob2.download_as_string()
+    #contents = contents.decode(encoding='UTF-8')
+    fileblob2 = bucket2.blob(file_name)
+    #key_file = StringIO(contents)
+    #private_key_file = paramiko.RSAKey.from_private_key(key_file)
+    
+    hostname = '204.99.14.59'
+    username = 'cdrcisiris_gcp'
+    password = 'p36#TQke'
+    
+    def sftptransfer():
+        cnopts = pysftp.CnOpts()
+        cnopts.hostkeys = None  
+        with pysftp.Connection(hostname, username=username, password=password, cnopts=cnopts) as sftp:
+            remote_file=sftp.open(file_name, 'w+')
+            fileblob2.download_to_file(remote_file)
+            sftp.close()
+    sftptransfer()  
+   
+    return f'Sucess!'
+
+
+
+# Function dependencies, for example:
+# package>=version
+#pickle
+pandas
+#logging
+google.cloud
+#datetime
+google.cloud.storage
+google_auth_oauthlib
+#googleapiclient
+google-api-python-client==1.7.9
+pysftp
+#io
+#paramiko
