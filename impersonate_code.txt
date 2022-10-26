@@ -1,0 +1,143 @@
+
+import json
+import pysftp
+import os
+from google.cloud import storage
+import google.auth.impersonated_credentials
+import google.auth
+from google.cloud import secretmanager
+
+
+#os.environ.get('prefix', 'Source_prefix is not present')
+
+
+bucket_name = "usmedpent-eds-devlan-cis"  # this is the bucket from storage bucket.Good to take it from env varible
+prefix = "ACO_INBOUND_ENC/"  # this is the prefix from storage bucket.Good to take it from env varible
+archival_bucket = "usmedpent-eds-devlanarc-cis"
+impersonated_sa="impersonateacc@cXXXXX.iam.gserviceaccount.com"#Good to take it from env varible
+
+
+
+def list_blobs(gcs_client):
+    bucket = gcs_client.get_bucket(bucket_name)
+    blobs = list(bucket.list_blobs(prefix=prefix))
+    list_of_file = []
+    for name in blobs:
+        if name.name != prefix:
+            print(name.name)
+            list_of_file.append(name.name)
+    return list_of_file
+
+
+def read_from_gcs(gcs_client, bucket, file_name):
+    bucket = gcs_client.get_bucket(bucket)
+    blob = bucket.blob(file_name)
+    if blob.exists():
+        print("file downloading started")
+        return blob.download_to_filename("/tmp/" + file_name.replace('/', '_'))
+        # return blob.download_to_filename( file_name.replace('/','_'))
+    return None
+
+
+def read_bytes_from_gcs(gcs_client, bucket, file_name):
+    bucket = gcs_client.get_bucket(bucket)
+    blob = bucket.blob(file_name)
+    if blob.exists():
+        return blob.download_as_string()
+    return None
+
+
+def mv_blob(bucket_name, blob_name, new_bucket_name, new_blob_name):
+    """
+    Function for moving files between directories or buckets. it will use GCP's copy
+    function then delete the blob from the old location.
+
+    inputs
+    -----
+    bucket_name: name of bucket
+    blob_name: str, name of file
+        ex. 'data/some_location/file_name'
+    new_bucket_name: name of bucket (can be same as original if we're just moving around directories)
+    new_blob_name: str, name of file in new directory in target bucket
+        ex. 'data/destination/file_name'
+    """
+    storage_client = storage.Client()
+    source_bucket = storage_client.get_bucket(bucket_name)
+    source_blob = source_bucket.blob(blob_name)
+    destination_bucket = storage_client.get_bucket(new_bucket_name)
+
+    # copy to new destination
+    new_blob = source_bucket.copy_blob(source_blob, destination_bucket, new_blob_name)
+
+    # delete in old destination
+    source_blob.delete()
+
+    print(f'File moved from {source_blob} to {new_blob_name}')
+
+
+def upload_to_outbound_sftp(gcs, bucket_name, list_of_files):
+    ftp_host = "204.99.14.59"
+    ftp_port = 22
+    ftp_user = "cdrcisiris_gcp"
+    ftp_pass = "p36#TQke"
+    destination_ftp_site = ftp_host
+    source_bucket = bucket_name
+    source_keys = list_of_files
+    destination_file_path = "/pnt205/Patient_Roster/outbound/"  # SFTP directroy location(ISC location)
+
+    for file in source_keys:
+        source_key = file
+        print('Start uploading from {}/{} to {}/{}'.format(source_bucket, source_key, destination_ftp_site,
+                                                           destination_file_path))
+        cnopts = pysftp.CnOpts()
+        cnopts.hostkeys = None
+        sftp = pysftp.Connection(ftp_host, username=ftp_user, password=ftp_pass, cnopts=cnopts)
+        print("Connection successfull to SFTP!")
+        data = read_bytes_from_gcs(gcs, source_bucket, source_key)
+
+        print(data)
+        f = sftp.open(destination_file_path + source_key.split("/")[-1], 'w+')
+        try:
+            f.write(data)
+            f.flush()
+        finally:
+            f.close()
+        if sftp != None:
+            sftp.close()
+            sftp = None
+
+        print('Upload completed from {}/{} to {}/{}'.format(source_bucket, source_key, destination_ftp_site,
+                                                            destination_file_path))
+
+        # enable below function only when you need to archive the object in location
+        mv_blob(source_bucket, source_key, archival_bucket, source_key)
+
+def __impersonate_account():
+    target_scopes = [
+        "https://www.googleapis.com/auth/devstorage.read_only"
+    ]
+    creds, pid = google.auth.default()
+    print(f"Obtained default credentials for the project {pid}")
+    tcreds = google.auth.impersonated_credentials.Credentials(
+        source_credentials=creds,
+        target_principal=impersonated_sa,
+        target_scopes=target_scopes,
+    )
+    return tcreds
+def main(request):
+    request_json = request.get_json()
+    tcreds = __impersonate_account()
+    gcs = storage.Client(credentials=tcreds)
+    list_of_files = list_blobs(gcs)
+    upload_to_outbound_sftp(gcs, bucket_name, list_of_files=list_of_files)
+    return f'file uploaded On SFTP server successfully'
+
+
+'''
+# Function dependencies, for example:
+# package>=version
+pysftp
+google-cloud-storage
+google-auth
+'''
+
