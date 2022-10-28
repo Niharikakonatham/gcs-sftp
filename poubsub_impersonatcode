@@ -141,6 +141,7 @@ def __impersonate_account():
 def main(event, context):
     #request_json = request.get_json()
     pubsub_message = base64.b64decode(event['data']).decode('utf-8')
+    print(pubsub_message)
     bucket_name=pubsub_message["bucket"]
     file_name=pubsub_message["name"]
     tcreds = __impersonate_account()
