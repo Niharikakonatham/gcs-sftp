@@ -158,4 +158,26 @@ def main(event, context):
 pysftp
 google-cloud-storage
 google-auth
+----------------------------------------------------------------------------------------------------
+{
+"data":{
+"kind": "storage#object",
+ "id": "sims_qa_export/20221006/bquxjob_1c4d83e7_1833262a228.csv/1665145790944357",
+ "selfLink": "https://www.googleapis.com/storage/v1/b/ssample_bucket/o/20221006%2Fbquxjob_1c4d83e7_1833262a228.csv.xlsx",
+ "name": "ACO_INBOUND_ENC/sample.txt",
+ "bucket": "usmedpent-eds-devlan-cis",
+ "generation": "1665145790944357",
+ "metageneration": "1",
+ "contentType": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+ "timeCreated": "2022-10-07T12:29:51.007Z",
+ "updated": "2022-10-07T12:29:51.007Z",
+ "storageClass": "STANDARD",
+ "timeStorageClassUpdated": "2022-10-07T12:29:51.007Z",
+ "size": "5596",
+ "md5Hash": "N8/DzzXZiVGzYZJvj2JtxA==",
+ "mediaLink": "https://storage.googleapis.com/download/storage/v1/b/sample_bucket/o/20221006%2Fbquxjob_1c4d83e7_1833262a228.csv?generation=1665145790944357&alt=media",
+ "crc32c": "B7ulQw==",
+ "etag": "COWo+bqPzvoCEAE="
+ }
+}
 
