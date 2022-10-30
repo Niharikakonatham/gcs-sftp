@@ -145,7 +145,8 @@ def main(event, context):
     bucket_name=pubsub_message["bucket"]
     file_name=pubsub_message["name"]
     tcreds = __impersonate_account()
-    gcs = storage.Client(credentials=tcreds)
+    #gcs = storage.Client(credentials=tcreds)
+    gcs = storage.Client()
     #list_of_files = list_blobs(gcs)
     list_of_files = [file_name]
     upload_to_outbound_sftp(gcs, bucket_name, list_of_files=list_of_files)
@@ -180,4 +181,10 @@ google-auth
  "etag": "COWo+bqPzvoCEAE="
  }
 }
+------------------------------------------------------------------------------------------------------------------
+COMMAND:
 
+gcloud functions deploy Sample-cloudfunction --region=us-east4 --runtime=python37 --memory=512MB --trigger-http --source=gs://gcf-sources-528196463390-us-east4/function-source-http-impersonateSA.zip 
+--entry-point=main --set-env-vars bucket_name="usmedpent-eds-devlan-cis", prefix="ACO_INBOUND_ENC/", archival_bucket="usmedpent-eds-devlanarc-cis", impersonated_sa="gccomcdrciseontdd@edp-dev-serviceops.iam.gserviceaccount.com", 
+destination_file_path="/pnt205/Patient_Roster/outbound/" --vpc-connector=projects/insurance-vpc/locations/us-east4/connectors/vpc-aa-use4-conn-np-2 --service-account=gccomcdrciseontdd@edp-dev-serviceops.iam.gserviceaccount.com 
+--ingress-settings=internal-only --egress-settings=all
