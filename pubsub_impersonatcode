@@ -124,7 +124,7 @@ def upload_to_outbound_sftp(gcs, bucket_name, list_of_files):
                                                             destination_file_path))
 
         # enable below function only when you need to archive the object in location
-        #mv_blob(source_bucket, source_key, archival_bucket, source_key)
+        mv_blob(source_bucket, source_key, archival_bucket, source_key)
 
 def __impersonate_account():
     target_scopes = [
