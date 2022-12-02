@@ -1,0 +1,66 @@
+Cloud Function(Dev) for reading from GCS and uploading to SFTP ISC location
+Summary:
+
+1.Cloud Function is a function as a service which monitors a GCS bucket and if there is a new file upload then the CF triggers and upload the file to outbound folder for ISC (SFTP)
+
+2.Cloud Function developed in python and checked in GIT Repo- https://github.aetna.com/UDF-DataOperations/cdr-cis-cf-sftp 
+
+3.Cloud Function deployed on DEV GCP Project
+
+4.Cloud function is able to upload the file to Outbound folder on SFTP so ISC team can read it.
+
+  
+
+FLOW:
+
+
+Any update(new file addition/update existing file) to GCS bucket will publish an event in Pub/Sub topic.
+
+Once event get published in Pub/Sub topic Cloud Function will get triggered automatically with event data as an input.
+
+Cloud Function reads bucket name and the file name from Pub/Sub message or event.
+
+Cloud Function reads from Cloud storage file data and write it to SFTP location. Once file gets successfully written to SFTP location Cloud Function archive that file into archival bucket.
+
+
+
+Please find the details below in DEV env:
+
+Compute project where Cloud function resides: edp-dev-eds-cdr-cis 
+
+Cloud Function name: pubsub-cf
+
+Pub/Sub Topic: edp-dev-cis-listener-poc
+
+Storage project: edp-dev-storage
+
+GCS bucket: usmedpent-eds-devlan-cis
+
+Archival bucket: usmedpent-eds-devlanarc-cis
+
+ Exceptions:
+
+To allow call of the HTTP Cloud function (Ingress settings) – “Allow all Traffic”
+
+To access Cloud Storage Bucket on EDP Project(edp-dev-storage), all Traffic needs to go via VPC Service perimeter
+
+Select “Route all traffic through VPC connector” Egress setting
+
+By default, Egress option “Route all traffic through VPC connector” is disabled by a security constraint. To enable the option, submit a request through the following link to Cloud Security team to lift the constraint
+
+​https://aetnao365.sharepoint.com/sites/CloudSecurityStrategyandGovernance/Lists/CloudSecurityException/AllItems.aspx?OR=Teams%2DHL&CT=1660677975092&clickparams=eyJBcHBOYW1lIjoiVGVhbXMtRGVza3RvcCIsIkFwcFZlcnNpb24iOiIyNy8yMjA3MDMwMDgxNSIsIkhhc0ZlZGVyYXRlZFVzZXIiOmZhbHNlfQ%3D%3D - Connect to preview
+
+
+
+Gcloud command to deploy the Cloud function in DEV CIS project:
+
+gcloud functions deploy $NAME$ --region=us-east4 --runtime=python37 --memory=512MB --trigger-topic=$TOPIC NAME$ --project=$PROJECT NAME$--source=$CODE LOCATION INSIDE THE BUCKET$ --entry-point=$ENTRY INSIDE THE CODE$ --set-env-vars $VARIABLE NAME=VALUE$ --vpc-connector=$VPC CONNECTOR$ --service-account=$PIPELINE SERVICE ACCOUNT$ --ingress-settings=internal-only --egress-settings=all 
+
+$CODE LOCATION INSIDE THE BUCKET$ -- Should be zip file contains main.py and requirements.txt
+
+
+
+CI/CD deployment plan- Integrate the code in Git repository and from there we can use Cloud Build or Jenkins to deploy to others environments. Below link is to get an overview of the CICD pipeline yet to setup.
+
+https://wikiprod.aetna.com/pages/viewpage.action?spaceKey=UDP&title=Cloud+Function+-+Java+CICD+Pipeline 
+
